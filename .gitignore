@@ -1,0 +1,53 @@
+# =========================
+# AquaPulse - Git Ignore
+# =========================
+
+# Secrets
+.env
+.env.*
+config/secrets.toml
+.streamlit/secrets.toml
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Jupyter temporary files
+.ipynb_checkpoints/
+
+# IDE / operating system
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Raw data
+data/raw/**/*.csv
+
+# Processed/generated data
+data/processed/*.csv
+
+# Required deployment performance table
+!data/processed/do_prediction_model_performance.csv
+
+# Ignore all trained models first
+models/*.pkl
+models/*.joblib
+models/*.pickle
+
+# Allow ONLY deployed live DO models
+!models/linear_regression_do_mg_per_l_15min.pkl
+!models/linear_regression_do_mg_per_l_30min.pkl
+!models/linear_regression_do_mg_per_l_45min.pkl
+!models/linear_regression_do_mg_per_l_60min.pkl
+!models/linear_regression_do_mg_per_l_75min.pkl
+!models/linear_regression_do_mg_per_l_90min.pkl
+!models/linear_regression_do_mg_per_l_105min.pkl
+!models/linear_regression_do_mg_per_l_120min.pkl
