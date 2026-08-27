@@ -16,7 +16,6 @@ from plotly.subplots import make_subplots
 
 from utils.live_service import refresh_live_system
 from utils.config import HORIZONS, HORIZON_LABELS
-from utils.database import load_sensor_history, load_forecast_history
 
 
 app = Flask(__name__)
@@ -33,13 +32,6 @@ LIVE_HISTORY_FILE = (
     / "data"
     / "processed"
     / "live_aquasensor_api_readings.csv"
-)
-
-LIVE_FORECAST_HISTORY_FILE = (
-    PROJECT_ROOT
-    / "data"
-    / "processed"
-    / "live_river_do_forecasts.csv"
 )
 
 
@@ -121,9 +113,7 @@ def get_live_system(force=False):
 
                 return sensors, forecasts
 
-    sensors, forecasts = refresh_live_system(
-        save_to_database=False,
-    )
+    sensors, forecasts = refresh_live_system()
 
     if sensors is None or sensors.empty:
         raise RuntimeError(
@@ -317,13 +307,22 @@ def prepare_page_data(
 # HISTORICAL DATA
 # ============================================================
 
-def _clean_sensor_history(history):
-    """Normalise actual sensor history from PostgreSQL or CSV."""
+def load_history():
 
-    if history is None or history.empty:
+    if not LIVE_HISTORY_FILE.exists():
         return pd.DataFrame()
 
-    history = history.copy()
+    try:
+        history = pd.read_csv(
+            LIVE_HISTORY_FILE,
+            low_memory=False,
+        )
+
+    except Exception:
+        return pd.DataFrame()
+
+    if history.empty:
+        return history
 
     required_columns = [
         "timestamp",
@@ -333,11 +332,10 @@ def _clean_sensor_history(history):
         "temperature",
     ]
 
-    if not all(
-        column in history.columns
-        for column in required_columns
-    ):
-        return pd.DataFrame()
+    for column in required_columns:
+
+        if column not in history.columns:
+            return pd.DataFrame()
 
     history["sensor_name"] = (
         history["sensor_name"].astype(str)
@@ -348,17 +346,22 @@ def _clean_sensor_history(history):
         errors="coerce",
     )
 
-    for column in (
-        "dissolved_oxygen_mgl",
-        "dissolved_oxygen_pct",
-        "temperature",
-    ):
-        history[column] = pd.to_numeric(
-            history[column],
-            errors="coerce",
-        )
+    history["dissolved_oxygen_mgl"] = pd.to_numeric(
+        history["dissolved_oxygen_mgl"],
+        errors="coerce",
+    )
 
-    return (
+    history["dissolved_oxygen_pct"] = pd.to_numeric(
+        history["dissolved_oxygen_pct"],
+        errors="coerce",
+    )
+
+    history["temperature"] = pd.to_numeric(
+        history["temperature"],
+        errors="coerce",
+    )
+
+    history = (
         history
         .dropna(
             subset=[
@@ -380,70 +383,13 @@ def _clean_sensor_history(history):
         .reset_index(drop=True)
     )
 
-
-def load_history():
-    """
-    Load all accumulated actual AquaSensor readings.
-
-    Production priority:
-    1. PostgreSQL persistent history.
-    2. CSV fallback for local use or temporary DB failure.
-    """
-
-    try:
-        history = load_sensor_history()
-        history = _clean_sensor_history(history)
-
-        if not history.empty:
-            return history
-
-    except Exception as exc:
-        print(
-            "Warning: PostgreSQL sensor history unavailable: "
-            f"{exc}"
-        )
-
-    if not LIVE_HISTORY_FILE.exists():
-        return pd.DataFrame()
-
-    try:
-        history = pd.read_csv(
-            LIVE_HISTORY_FILE,
-            low_memory=False,
-        )
-    except Exception:
-        return pd.DataFrame()
-
-    return _clean_sensor_history(history)
+    return history
 
 
 def load_station_history(
     station_name,
-    max_rows=5000,
+    max_rows=1000,
 ):
-    """Return actual DO and temperature history for one station."""
-
-    # Query PostgreSQL directly first so long-running production
-    # history does not require loading every station into memory.
-    try:
-        history = load_sensor_history(
-            sensor_name=station_name,
-        )
-        history = _clean_sensor_history(history)
-
-        if not history.empty:
-            return (
-                history
-                .sort_values("timestamp")
-                .tail(max_rows)
-                .reset_index(drop=True)
-            )
-
-    except Exception as exc:
-        print(
-            f"Warning: PostgreSQL history unavailable for "
-            f"{station_name}: {exc}"
-        )
 
     history = load_history()
 
@@ -451,97 +397,14 @@ def load_station_history(
         return history
 
     history = history[
-        history["sensor_name"].astype(str)
-        == str(station_name)
+        history["sensor_name"]
+        == station_name
     ].copy()
 
     return (
         history
         .sort_values("timestamp")
         .tail(max_rows)
-        .reset_index(drop=True)
-    )
-
-
-def load_station_forecast_history(
-    station_name,
-    max_rows=5000,
-):
-    """
-    Load accumulated historical 15-minute DO predictions.
-
-    PostgreSQL is the production source. The existing CSV is
-    retained as a fallback for local development.
-    """
-
-    history = pd.DataFrame()
-
-    try:
-        history = load_forecast_history(
-            sensor_name=station_name,
-        )
-    except Exception as exc:
-        print(
-            f"Warning: PostgreSQL forecast history unavailable "
-            f"for {station_name}: {exc}"
-        )
-
-    if history is None or history.empty:
-
-        if not LIVE_FORECAST_HISTORY_FILE.exists():
-            return pd.DataFrame()
-
-        try:
-            history = pd.read_csv(
-                LIVE_FORECAST_HISTORY_FILE,
-                low_memory=False,
-            )
-        except Exception:
-            return pd.DataFrame()
-
-        if "sensor_name" in history.columns:
-            history = history[
-                history["sensor_name"].astype(str)
-                == str(station_name)
-            ].copy()
-
-    required_columns = [
-        "sensor_name",
-        "forecast_time_15min",
-        "predicted_do_mgl_15min",
-    ]
-
-    if not all(
-        column in history.columns
-        for column in required_columns
-    ):
-        return pd.DataFrame()
-
-    history["forecast_time_15min"] = pd.to_datetime(
-        history["forecast_time_15min"],
-        errors="coerce",
-    )
-
-    history["predicted_do_mgl_15min"] = pd.to_numeric(
-        history["predicted_do_mgl_15min"],
-        errors="coerce",
-    )
-
-    return (
-        history
-        .dropna(
-            subset=[
-                "forecast_time_15min",
-                "predicted_do_mgl_15min",
-            ]
-        )
-        .sort_values("forecast_time_15min")
-        .drop_duplicates(
-            subset=["forecast_time_15min"],
-            keep="last",
-        )
-        .tail(max_rows)
-        .reset_index(drop=True)
     )
 
 
@@ -555,15 +418,15 @@ def create_station_plot(
     forecasts,
 ):
     """
-    Create one live Insights graph for a monitoring station.
+    Create the Insights graph for one station.
 
-    The graph always contains three time-series running together:
-    - Actual DO: solid dark blue
-    - Water Temperature: solid orange, right y-axis
-    - Predicted DO: dotted blue
+    All three series are active at the same time:
+    - Actual DO continues with every new AquaSensor reading.
+    - Water Temperature continues with every new AquaSensor reading.
+    - Predicted DO is refreshed from the newest reading and
+      extends 15-120 minutes into the future.
 
-    The same function is called for Derwent 13, Derwent 13-50
-    and Derwent 21.
+    The visual style remains the same as the previous graph.
     """
 
     # --------------------------------------------------------
@@ -572,7 +435,7 @@ def create_station_plot(
 
     sensor_rows = sensors[
         sensors["sensor_name"].astype(str)
-        == str(station_name)
+        == station_name
     ]
 
     if sensor_rows.empty:
@@ -585,180 +448,133 @@ def create_station_plot(
         errors="coerce",
     )
 
-    current_do = pd.to_numeric(
-        sensor.get("dissolved_oxygen_mgl"),
-        errors="coerce",
-    )
-
-    current_temperature = pd.to_numeric(
-        sensor.get("temperature"),
-        errors="coerce",
-    )
-
-    current_do_pct = pd.to_numeric(
-        sensor.get("dissolved_oxygen_pct"),
-        errors="coerce",
-    )
-
-    if (
-        pd.isna(current_time)
-        or pd.isna(current_do)
-        or pd.isna(current_temperature)
-    ):
+    if pd.isna(current_time):
         return None
 
-    current_do = float(current_do)
-    current_temperature = float(current_temperature)
+    current_do = float(
+        sensor["dissolved_oxygen_mgl"]
+    )
+
+    current_temp = float(
+        sensor["temperature"]
+    )
+
+    current_do_pct = float(
+        sensor["dissolved_oxygen_pct"]
+    )
 
     # --------------------------------------------------------
-    # ACTUAL DO + TEMPERATURE HISTORY
+    # ACTUAL HISTORY
     # --------------------------------------------------------
 
     history = load_station_history(
         station_name,
-        max_rows=5000,
+        max_rows=1000,
     )
 
-    latest_actual = pd.DataFrame(
+    current_row = pd.DataFrame(
         {
-            "timestamp": [current_time],
-            "sensor_name": [station_name],
-            "dissolved_oxygen_mgl": [current_do],
-            "dissolved_oxygen_pct": [current_do_pct],
-            "temperature": [current_temperature],
+            "timestamp": [
+                current_time
+            ],
+            "sensor_name": [
+                station_name
+            ],
+            "dissolved_oxygen_mgl": [
+                current_do
+            ],
+            "dissolved_oxygen_pct": [
+                current_do_pct
+            ],
+            "temperature": [
+                current_temp
+            ],
         }
     )
 
     if history.empty:
-        history = latest_actual
+
+        history = current_row
+
     else:
+
         history = pd.concat(
-            [history, latest_actual],
+            [
+                history,
+                current_row,
+            ],
             ignore_index=True,
         )
 
-    history["timestamp"] = pd.to_datetime(
-        history["timestamp"],
-        errors="coerce",
-    )
-    history["dissolved_oxygen_mgl"] = pd.to_numeric(
-        history["dissolved_oxygen_mgl"],
-        errors="coerce",
-    )
-    history["temperature"] = pd.to_numeric(
-        history["temperature"],
-        errors="coerce",
-    )
-
-    history = (
-        history
-        .dropna(
-            subset=[
-                "timestamp",
-                "dissolved_oxygen_mgl",
-                "temperature",
-            ]
-        )
-        .drop_duplicates(
-            subset=["timestamp", "sensor_name"],
-            keep="last",
-        )
-        .sort_values("timestamp")
-        .reset_index(drop=True)
-    )
-
-    # --------------------------------------------------------
-    # HISTORICAL PREDICTED DO
-    # --------------------------------------------------------
-
-    forecast_history = load_station_forecast_history(
-        station_name,
-        max_rows=5000,
-    )
-
-    predicted_points = []
-
-    if not forecast_history.empty:
-        for _, row in forecast_history.iterrows():
-            predicted_points.append(
-                {
-                    "timestamp": row["forecast_time_15min"],
-                    "predicted_do": float(
-                        row["predicted_do_mgl_15min"]
-                    ),
-                }
+        history = (
+            history
+            .drop_duplicates(
+                subset=[
+                    "timestamp",
+                    "sensor_name",
+                ],
+                keep="last",
             )
+            .sort_values(
+                "timestamp"
+            )
+        )
 
     # --------------------------------------------------------
-    # LATEST FUTURE 15-120 MINUTE FORECAST
+    # CURRENT FORECAST
     # --------------------------------------------------------
 
     station_forecasts = forecasts[
         forecasts["sensor_name"].astype(str)
-        == str(station_name)
+        == station_name
     ]
 
-    if not station_forecasts.empty:
-        forecast = station_forecasts.iloc[-1]
+    if station_forecasts.empty:
+        return None
 
-        # Connect the newest predicted line to the latest actual DO.
-        predicted_points.append(
-            {
-                "timestamp": current_time,
-                "predicted_do": current_do,
-            }
+    forecast = station_forecasts.iloc[-1]
+
+    predicted_times = [
+        current_time
+    ]
+
+    predicted_values = [
+        current_do
+    ]
+
+    for horizon in HORIZONS:
+
+        column = (
+            f"predicted_do_mgl_{horizon}"
         )
 
-        for horizon in HORIZONS:
-            prediction_column = f"predicted_do_mgl_{horizon}"
+        if column not in forecast.index:
+            continue
 
-            if prediction_column not in forecast.index:
-                continue
-
-            value = pd.to_numeric(
-                forecast[prediction_column],
-                errors="coerce",
-            )
-
-            if pd.isna(value):
-                continue
-
-            minutes = int(
-                str(horizon).replace("min", "")
-            )
-
-            predicted_points.append(
-                {
-                    "timestamp": (
-                        current_time
-                        + pd.Timedelta(minutes=minutes)
-                    ),
-                    "predicted_do": float(value),
-                }
-            )
-
-    predicted_history = pd.DataFrame(predicted_points)
-
-    if not predicted_history.empty:
-        predicted_history["timestamp"] = pd.to_datetime(
-            predicted_history["timestamp"],
+        value = pd.to_numeric(
+            forecast[column],
             errors="coerce",
         )
-        predicted_history["predicted_do"] = pd.to_numeric(
-            predicted_history["predicted_do"],
-            errors="coerce",
+
+        if pd.isna(value):
+            continue
+
+        minutes = int(
+            str(horizon).replace(
+                "min",
+                "",
+            )
         )
-        predicted_history = (
-            predicted_history
-            .dropna(
-                subset=["timestamp", "predicted_do"]
+
+        predicted_times.append(
+            current_time
+            + pd.Timedelta(
+                minutes=minutes
             )
-            .drop_duplicates(
-                subset=["timestamp"],
-                keep="last",
-            )
-            .sort_values("timestamp")
-            .reset_index(drop=True)
+        )
+
+        predicted_values.append(
+            float(value)
         )
 
     # --------------------------------------------------------
@@ -766,20 +582,31 @@ def create_station_plot(
     # --------------------------------------------------------
 
     figure = make_subplots(
-        specs=[[{"secondary_y": True}]]
+        specs=[
+            [
+                {
+                    "secondary_y": True
+                }
+            ]
+        ]
     )
 
-    # 1. ACTUAL DO - DARK BLUE SOLID
+    # ACTUAL DO
     figure.add_trace(
         go.Scatter(
             x=history["timestamp"],
-            y=history["dissolved_oxygen_mgl"],
+            y=history[
+                "dissolved_oxygen_mgl"
+            ],
             name="Actual DO",
-            mode="lines",
+            mode="lines+markers",
             connectgaps=False,
             line=dict(
-                color="#3155A5",
+                color="#73AFC8",
                 width=3,
+            ),
+            marker=dict(
+                size=5
             ),
             hovertemplate=(
                 "<b>Actual DO</b>"
@@ -791,17 +618,48 @@ def create_station_plot(
         secondary_y=False,
     )
 
-    # 2. WATER TEMPERATURE - ORANGE SOLID
+    # PREDICTED DO
+    figure.add_trace(
+        go.Scatter(
+            x=predicted_times,
+            y=predicted_values,
+            name="Predicted DO",
+            mode="lines+markers",
+            connectgaps=False,
+            line=dict(
+                color="#9887C9",
+                width=3,
+                dash="dash",
+            ),
+            marker=dict(
+                size=6
+            ),
+            hovertemplate=(
+                "<b>Predicted DO</b>"
+                "<br>%{x|%d %b %Y %H:%M}"
+                "<br>%{y:.2f} mg/L"
+                "<extra></extra>"
+            ),
+        ),
+        secondary_y=False,
+    )
+
+    # WATER TEMPERATURE
     figure.add_trace(
         go.Scatter(
             x=history["timestamp"],
-            y=history["temperature"],
+            y=history[
+                "temperature"
+            ],
             name="Water Temperature",
-            mode="lines",
+            mode="lines+markers",
             connectgaps=False,
             line=dict(
-                color="#F28C28",
-                width=3,
+                color="#DDA17A",
+                width=2.5,
+            ),
+            marker=dict(
+                size=4
             ),
             hovertemplate=(
                 "<b>Water Temperature</b>"
@@ -813,49 +671,31 @@ def create_station_plot(
         secondary_y=True,
     )
 
-    # 3. PREDICTED DO - BLUE DOTTED
-    if not predicted_history.empty:
-        figure.add_trace(
-            go.Scatter(
-                x=predicted_history["timestamp"],
-                y=predicted_history["predicted_do"],
-                name="Predicted DO",
-                mode="lines",
-                connectgaps=False,
-                line=dict(
-                    color="#7698C8",
-                    width=3,
-                    dash="dot",
-                ),
-                hovertemplate=(
-                    "<b>Predicted DO</b>"
-                    "<br>%{x|%d %b %Y %H:%M}"
-                    "<br>%{y:.2f} mg/L"
-                    "<extra></extra>"
-                ),
-            ),
-            secondary_y=False,
-        )
+    # --------------------------------------------------------
+    # PREVIOUS GRAPH STYLE
+    # --------------------------------------------------------
 
     figure.update_layout(
         title=dict(
-            text=f"{station_name} — Live River Trend",
+            text=(
+                f"{station_name} — Live River Trend"
+            ),
             x=0.02,
             font=dict(
-                size=19,
-                color="#334A56",
+                size=18,
+                color="#465862",
             ),
         ),
-        height=540,
+        height=520,
         paper_bgcolor="#FFFFFF",
         plot_bgcolor="#FFFFFF",
         hovermode="x unified",
         dragmode="pan",
         margin=dict(
-            l=70,
-            r=75,
-            t=90,
-            b=75,
+            l=65,
+            r=70,
+            t=85,
+            b=70,
         ),
         legend=dict(
             orientation="h",
@@ -867,10 +707,10 @@ def create_station_plot(
     figure.update_xaxes(
         title_text="Date and time",
         showgrid=True,
-        gridcolor="#E7EEF2",
+        gridcolor="#EDF1F2",
         rangeslider=dict(
             visible=True,
-            thickness=0.08,
+            thickness=0.10,
         ),
         rangeselector=dict(
             buttons=[
@@ -907,14 +747,18 @@ def create_station_plot(
     )
 
     figure.update_yaxes(
-        title_text="Dissolved Oxygen (mg/L)",
+        title_text=(
+            "Dissolved Oxygen (mg/L)"
+        ),
         secondary_y=False,
         showgrid=True,
-        gridcolor="#E7EEF2",
+        gridcolor="#EDF1F2",
     )
 
     figure.update_yaxes(
-        title_text="Water Temperature (°C)",
+        title_text=(
+            "Water Temperature (°C)"
+        ),
         secondary_y=True,
         showgrid=False,
     )
