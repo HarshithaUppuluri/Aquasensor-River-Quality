@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        AquaPulse | Data Records
+    </title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='style.css') }}"
+    >
+
+    <script
+        src="https://cdn.plot.ly/plotly-2.35.2.min.js">
+    </script>
+
+</head>
+
+
+<body>
+
+
+<header class="site-header">
+
+    <div class="navbar">
+
+        <a
+            href="{{ url_for('home') }}"
+            class="brand"
+        >
+
+            <div class="brand-mark">
+                ≋
+            </div>
+
+            <div>
+
+                <div class="brand-name">
+                    AquaPulse
+                </div>
+
+                <div class="brand-subtitle">
+                    River Intelligence
+                </div>
+
+            </div>
+
+        </a>
+
+
+        <nav class="nav-links">
+
+            <a
+                href="{{ url_for('home') }}"
+                class="{% if active_page == 'home' %}active{% endif %}"
+            >
+                Home
+            </a>
+
+            <a
+                href="{{ url_for('insights') }}"
+                class="{% if active_page == 'insights' %}active{% endif %}"
+            >
+                Insights
+            </a>
+
+            <a
+                href="{{ url_for('data_records') }}"
+                class="{% if active_page == 'data_records' %}active{% endif %}"
+            >
+                Data Records
+            </a>
+
+            <a
+                href="{{ url_for('about') }}"
+                class="{% if active_page == 'about' %}active{% endif %}"
+            >
+                About
+            </a>
+
+        </nav>
+
+    </div>
+
+</header>
+
+
+<main class="page-container">
+
+
+<section class="about-hero">
+
+    <div class="section-label">
+        DATA RECORDS
+    </div>
+
+    <h1>
+        Historical River Data
+    </h1>
+
+    <p>
+        Explore previously recorded AquaSensor measurements
+        across the River Derwent.
+    </p>
+
+    <p>
+        Select a monitoring station and time range to review
+        dissolved oxygen, dissolved oxygen percentage and
+        water temperature records.
+    </p>
+
+</section>
+
+
+<section class="section">
+
+    <div class="section-label">
+        FILTER RECORDS
+    </div>
+
+    <h2>
+        Choose what you want to view
+    </h2>
+
+
+    <div class="records-filter-group">
+
+        <h3>
+            Monitoring Station
+        </h3>
+
+        <div class="records-filter-buttons">
+
+            <a
+                href="{{ url_for(
+                    'data_records',
+                    station='All Stations',
+                    range=range_filter
+                ) }}"
+                class="
+                    records-filter-button
+                    {% if station_filter == 'All Stations' %}
+                        active-record-filter
+                    {% endif %}
+                "
+            >
+                All Stations
+            </a>
+
+
+            {% for station in station_names %}
+
+            <a
+                href="{{ url_for(
+                    'data_records',
+                    station=station,
+                    range=range_filter
+                ) }}"
+                class="
+                    records-filter-button
+                    {% if station_filter == station %}
+                        active-record-filter
+                    {% endif %}
+                "
+            >
+                {{ station }}
+            </a>
+
+            {% endfor %}
+
+        </div>
+
+    </div>
+
+
+    <div class="records-filter-group">
+
+        <h3>
+            Time Range
+        </h3>
+
+        <div class="records-filter-buttons">
+
+            <a
+                href="{{ url_for(
+                    'data_records',
+                    station=station_filter,
+                    range='1h'
+                ) }}"
+                class="
+                    records-filter-button
+                    {% if range_filter == '1h' %}
+                        active-record-filter
+                    {% endif %}
+                "
+            >
+                Last 1 Hour
+            </a>
+
+
+            <a
+                href="{{ url_for(
+                    'data_records',
+                    station=station_filter,
+                    range='6h'
+                ) }}"
+                class="
+                    records-filter-button
+                    {% if range_filter == '6h' %}
+                        active-record-filter
+                    {% endif %}
+                "
+            >
+                Last 6 Hours
+            </a>
+
+
+            <a
+                href="{{ url_for(
+                    'data_records',
+                    station=station_filter,
+                    range='24h'
+                ) }}"
+                class="
+                    records-filter-button
+                    {% if range_filter == '24h' %}
+                        active-record-filter
+                    {% endif %}
+                "
+            >
+                Last 24 Hours
+            </a>
+
+
+            <a
+                href="{{ url_for(
+                    'data_records',
+                    station=station_filter,
+                    range='7d'
+                ) }}"
+                class="
+                    records-filter-button
+                    {% if range_filter == '7d' %}
+                        active-record-filter
+                    {% endif %}
+                "
+            >
+                Last 7 Days
+            </a>
+
+
+            <a
+                href="{{ url_for(
+                    'data_records',
+                    station=station_filter,
+                    range='all'
+                ) }}"
+                class="
+                    records-filter-button
+                    {% if range_filter == 'all' %}
+                        active-record-filter
+                    {% endif %}
+                "
+            >
+                All
+            </a>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<section class="section">
+
+    <div class="section-label">
+        RECORD SUMMARY
+    </div>
+
+    <h2>
+        Selected data
+    </h2>
+
+
+    <div class="records-summary-grid">
+
+        <article class="records-summary-card summary-lilac">
+
+            <span>
+                Total Records
+            </span>
+
+            <strong>
+                {{ total_records }}
+            </strong>
+
+        </article>
+
+
+        <article class="records-summary-card summary-sky">
+
+            <span>
+                Earliest Record
+            </span>
+
+            <strong>
+                {{ earliest_record }}
+            </strong>
+
+        </article>
+
+
+        <article class="records-summary-card summary-peach">
+
+            <span>
+                Latest Record
+            </span>
+
+            <strong>
+                {{ latest_record }}
+            </strong>
+
+        </article>
+
+
+        <article class="records-summary-card summary-mint">
+
+            <span>
+                Stations
+            </span>
+
+            <strong>
+                {{ station_count }}
+            </strong>
+
+        </article>
+
+    </div>
+
+</section>
+
+
+<section class="section">
+
+    <div class="section-label">
+        HISTORICAL TRENDS
+    </div>
+
+    <h2>
+        Recorded measurements over time
+    </h2>
+
+    <p class="about-section-text">
+        Zoom, pan and hover over the graph to inspect
+        historical measurements.
+    </p>
+
+
+    {% if graph_html %}
+
+    <article class="interactive-graph-card">
+
+        <div class="plotly-wrapper">
+            {{ graph_html | safe }}
+        </div>
+
+    </article>
+
+    {% else %}
+
+    <div class="message-box warning-box">
+
+        <strong>
+            No records found.
+        </strong>
+
+    </div>
+
+    {% endif %}
+
+</section>
+
+
+<section class="section">
+
+    <div class="section-label">
+        RECORDED MEASUREMENTS
+    </div>
+
+    <h2>
+        Historical data table
+    </h2>
+
+
+    {% if records %}
+
+    <div class="records-table-wrapper">
+
+        <table class="records-table">
+
+            <thead>
+
+                <tr>
+                    <th>Date & Time</th>
+                    <th>Station</th>
+                    <th>DO (mg/L)</th>
+                    <th>DO (%)</th>
+                    <th>Water Temperature</th>
+                </tr>
+
+            </thead>
+
+            <tbody>
+
+                {% for row in records %}
+
+                <tr>
+
+                    <td>
+                        {{ row.timestamp }}
+                    </td>
+
+                    <td>
+                        {{ row.sensor_name }}
+                    </td>
+
+                    <td>
+                        {{ "%.2f"|format(row.do_mgl) }}
+                    </td>
+
+                    <td>
+                        {{ "%.2f"|format(row.do_pct) }}
+                    </td>
+
+                    <td>
+                        {{ "%.2f"|format(row.temperature) }}
+                        °C
+                    </td>
+
+                </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+    {% else %}
+
+    <div class="message-box warning-box">
+        No historical data is available for this filter.
+    </div>
+
+    {% endif %}
+
+</section>
+
+
+</main>
+
+
+<footer class="footer">
+
+    <div class="footer-content">
+
+        <strong>
+            ≋ AquaPulse
+        </strong>
+
+    </div>
+
+</footer>
+
+
+</body>
+</html>

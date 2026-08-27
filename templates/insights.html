@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <meta
+        http-equiv="refresh"
+        content="300"
+    >
+
+    <title>
+        AquaPulse | Insights
+    </title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='style.css') }}"
+    >
+
+    <script
+        src="https://cdn.plot.ly/plotly-2.35.2.min.js">
+    </script>
+
+</head>
+
+<body>
+
+
+<header class="site-header">
+
+    <div class="navbar">
+
+        <a
+            href="{{ url_for('home') }}"
+            class="brand"
+        >
+
+            <div class="brand-mark">
+                ≋
+            </div>
+
+            <div>
+
+                <div class="brand-name">
+                    AquaPulse
+                </div>
+
+                <div class="brand-subtitle">
+                    River Intelligence
+                </div>
+
+            </div>
+
+        </a>
+
+
+        <nav class="nav-links">
+
+            <a
+                href="{{ url_for('home') }}"
+                class="{% if active_page == 'home' %}active{% endif %}"
+            >
+                Home
+            </a>
+
+            <a
+                href="{{ url_for('insights') }}"
+                class="{% if active_page == 'insights' %}active{% endif %}"
+            >
+                Insights
+            </a>
+
+            <a
+                href="{{ url_for('data_records') }}"
+                class="{% if active_page == 'data_records' %}active{% endif %}"
+            >
+                Data Records
+            </a>
+
+            <a
+                href="{{ url_for('about') }}"
+                class="{% if active_page == 'about' %}active{% endif %}"
+            >
+                About
+            </a>
+
+        </nav>
+
+    </div>
+
+</header>
+
+
+<main class="page-container">
+
+
+<!-- =========================================================
+     HERO
+========================================================= -->
+
+<section class="about-hero">
+
+    <div class="section-label">
+        LIVE RIVER INSIGHTS
+    </div>
+
+    <h1>
+        See how river conditions are changing.
+    </h1>
+
+    <p>
+        Explore anomaly status and interactive river
+        trends using actual dissolved oxygen, predicted
+        dissolved oxygen and water temperature.
+    </p>
+
+</section>
+
+
+{% if error %}
+
+
+<!-- =========================================================
+     ERROR
+========================================================= -->
+
+<div class="message-box error-box">
+
+    <strong>
+        AquaPulse could not load Insights.
+    </strong>
+
+    <p>
+        {{ error }}
+    </p>
+
+</div>
+
+
+{% else %}
+
+
+<!-- =========================================================
+     LIVE ANOMALY DETECTION
+========================================================= -->
+
+<section class="section">
+
+    <div class="section-label">
+        LIVE ANOMALY DETECTION
+    </div>
+
+    <h2>
+        Current river status
+    </h2>
+
+    <p class="insights-description">
+        Each monitoring station is assessed using the
+        current and predicted dissolved oxygen conditions.
+    </p>
+
+
+    <div class="alert-station-grid">
+
+        {% for item in station_statuses %}
+
+        <a
+            href="{{ url_for(
+                'insights',
+                station=item.name
+            ) }}"
+            class="
+                insight-alert-card
+                alert-level-{{ item.level|lower }}
+                {% if item.name == selected_station %}
+                    selected-alert
+                {% endif %}
+            "
+        >
+
+            <div class="alert-card-heading">
+
+                <div>
+
+                    <span class="alert-station-location">
+                        {{ item.location }}
+                    </span>
+
+                    <h3>
+                        {{ item.name }}
+                    </h3>
+
+                </div>
+
+
+                <div
+                    class="
+                        traffic-status
+                        traffic-{{ item.level|lower }}
+                    "
+                >
+
+                    <span class="traffic-light"></span>
+
+                    {{ item.level }}
+
+                </div>
+
+            </div>
+
+
+            <div class="alert-readings">
+
+
+                <div>
+
+                    <span>
+                        DO
+                    </span>
+
+                    <strong>
+                        {{ "%.2f"|format(item.do_mgl) }}
+                        mg/L
+                    </strong>
+
+                </div>
+
+
+                <div>
+
+                    <span>
+                        DO %
+                    </span>
+
+                    <strong>
+                        {{ "%.2f"|format(item.do_pct) }}
+                        %
+                    </strong>
+
+                </div>
+
+
+                <div>
+
+                    <span>
+                        Temperature
+                    </span>
+
+                    <strong>
+                        {{ "%.1f"|format(item.temperature) }}
+                        °C
+                    </strong>
+
+                </div>
+
+
+            </div>
+
+
+            <div class="alert-reason-text">
+
+                <strong>
+                    Why {{ item.level }}?
+                </strong>
+
+                <p>
+                    {{ item.reason }}
+                </p>
+
+            </div>
+
+        </a>
+
+        {% endfor %}
+
+    </div>
+
+</section>
+
+
+<!-- =========================================================
+     STATUS EXPLANATION
+========================================================= -->
+
+<section class="section">
+
+    <div class="section-label">
+        STATUS EXPLANATION
+    </div>
+
+    <h2>
+        Understanding the alert colours
+    </h2>
+
+
+    <div class="traffic-guide-grid">
+
+
+        <!-- GREEN -->
+
+        <article class="traffic-guide green-guide">
+
+            <span class="guide-circle guide-green"></span>
+
+            <h3>
+                Green
+            </h3>
+
+            <p>
+                Current and predicted dissolved oxygen
+                conditions are within the configured
+                normal range.
+            </p>
+
+        </article>
+
+
+        <!-- ORANGE -->
+
+        <article class="traffic-guide orange-guide">
+
+            <span class="guide-circle guide-orange"></span>
+
+            <h3>
+                Orange
+            </h3>
+
+            <p>
+                A warning condition or concerning
+                dissolved oxygen trend has been detected.
+            </p>
+
+        </article>
+
+
+        <!-- RED -->
+
+        <article class="traffic-guide red-guide">
+
+            <span class="guide-circle guide-red"></span>
+
+            <h3>
+                Red
+            </h3>
+
+            <p>
+                A serious low dissolved oxygen or
+                abnormal condition has been detected.
+            </p>
+
+        </article>
+
+
+    </div>
+
+</section>
+
+
+<!-- =========================================================
+     LIVE TREND ANALYSIS
+========================================================= -->
+
+<section class="section">
+
+    <div class="section-top">
+
+        <div>
+
+            <div class="section-label">
+                LIVE TREND ANALYSIS
+            </div>
+
+            <h2>
+                Actual DO, predicted DO and water temperature
+            </h2>
+
+            <p>
+                Hover, zoom and drag backwards to inspect
+                older AquaSensor measurements.
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <!-- =====================================================
+         GRAPH CONTROL GUIDE
+    ====================================================== -->
+
+    <div class="graph-control-guide">
+
+        <div class="graph-help-item">
+
+            <strong>
+                ＋ / −
+            </strong>
+
+            <span>
+                Zoom
+            </span>
+
+        </div>
+
+
+        <div class="graph-help-item">
+
+            <strong>
+                ↔
+            </strong>
+
+            <span>
+                Move through time
+            </span>
+
+        </div>
+
+
+        <div class="graph-help-item">
+
+            <strong>
+                ⌂
+            </strong>
+
+            <span>
+                Reset
+            </span>
+
+        </div>
+
+
+        <div class="graph-help-item">
+
+            <strong>
+                Hover
+            </strong>
+
+            <span>
+                Exact values
+            </span>
+
+        </div>
+
+    </div>
+
+
+    <!-- =====================================================
+         INTERACTIVE GRAPHS
+    ====================================================== -->
+
+    {% for graph in graphs %}
+
+    <article class="interactive-graph-card">
+
+        <div class="graph-card-heading">
+
+            <div>
+
+                <span class="graph-location">
+                    {{ graph.location }}
+                </span>
+
+                <h3>
+                    {{ graph.station_name }}
+                </h3>
+
+            </div>
+
+
+            <span class="interactive-pill">
+                Interactive
+            </span>
+
+        </div>
+
+
+        <div class="plotly-wrapper">
+
+            {{ graph.html | safe }}
+
+        </div>
+
+    </article>
+
+    {% endfor %}
+
+
+    <!-- =====================================================
+         HOW TO READ THE GRAPHS
+    ====================================================== -->
+
+    <div class="graph-explanation">
+
+        <div class="section-label">
+            HOW TO READ THE GRAPHS
+        </div>
+
+        <h3>
+            Understanding the live river trend
+        </h3>
+
+        <p>
+            Each interactive graph combines historical AquaSensor
+            measurements with the latest machine-learning dissolved
+            oxygen forecast. This allows you to compare what has
+            already happened in the river with what the model
+            predicts may happen next.
+        </p>
+
+
+        <div class="graph-reading-grid">
+
+
+            <!-- ACTUAL DO -->
+
+            <div class="graph-reading-item actual-reading">
+
+                <div class="graph-reading-symbol">
+                    ●
+                </div>
+
+                <div>
+
+                    <strong>
+                        Actual Dissolved Oxygen
+                    </strong>
+
+                    <p>
+                        The solid blue line represents dissolved oxygen
+                        measurements recorded by the AquaSensor in mg/L.
+                        These are actual observed river measurements.
+                        Moving backwards through the graph allows you to
+                        inspect earlier saved readings.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <!-- PREDICTED DO -->
+
+            <div class="graph-reading-item predicted-reading">
+
+                <div class="graph-reading-symbol">
+                    ┄
+                </div>
+
+                <div>
+
+                    <strong>
+                        Predicted Dissolved Oxygen
+                    </strong>
+
+                    <p>
+                        The dashed purple line starts from the latest
+                        actual dissolved oxygen reading and continues
+                        into the future using machine-learning forecasts
+                        for 15, 30, 45, 60, 75, 90, 105 and 120 minutes.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <!-- WATER TEMPERATURE -->
+
+            <div class="graph-reading-item temperature-reading">
+
+                <div class="graph-reading-symbol">
+                    ~
+                </div>
+
+                <div>
+
+                    <strong>
+                        Water Temperature
+                    </strong>
+
+                    <p>
+                        The orange line represents measured river water
+                        temperature. Temperature uses the right-hand
+                        vertical axis because it is measured in °C,
+                        while dissolved oxygen is measured in mg/L.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+        </div>
+
+
+        <!-- =================================================
+             INTERACTIVE CONTROLS EXPLANATION
+        ================================================== -->
+
+        <div class="graph-interaction-note">
+
+            <strong>
+                Interactive controls
+            </strong>
+
+            <p>
+                Hover over any point to view the exact date, time
+                and measured value. Use the zoom controls to focus
+                on a shorter period, drag the graph left or right
+                to inspect older or newer readings, and use the
+                range slider beneath the graph to move through the
+                historical record. The reset control returns the
+                graph to its full view.
+            </p>
+
+        </div>
+
+
+        <!-- =================================================
+             PAST PRESENT FUTURE
+        ================================================== -->
+
+        <div class="graph-time-note">
+
+            <strong>
+                Past → Present → Future
+            </strong>
+
+            <p>
+                The Actual DO and Water Temperature lines represent
+                measurements that have already been recorded by the
+                AquaSensor. At the latest measurement, the Predicted
+                DO line begins and extends forward for the next
+                two hours.
+            </p>
+
+        </div>
+
+
+        <!-- =================================================
+             THREE STATIONS
+        ================================================== -->
+
+        <div class="graph-time-note">
+
+            <strong>
+                Three monitoring stations
+            </strong>
+
+            <p>
+                AquaPulse provides an individual interactive graph
+                for Derwent 13, Derwent 13-50 and Derwent 21 so that
+                changes in dissolved oxygen and water temperature
+                can be examined separately at each monitoring location.
+            </p>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+{% endif %}
+
+
+</main>
+
+
+<!-- =========================================================
+     FOOTER
+========================================================= -->
+
+<footer class="footer">
+
+    <div class="footer-content">
+
+        <strong>
+            ≋ AquaPulse
+        </strong>
+
+    </div>
+
+</footer>
+
+
+</body>
+
+</html>

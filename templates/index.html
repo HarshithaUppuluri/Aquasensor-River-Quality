@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>AquaPulse | Home</title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='style.css') }}"
+    >
+
+</head>
+
+<body>
+
+
+<header class="site-header">
+
+    <div class="navbar">
+
+        <a
+            href="{{ url_for('home') }}"
+            class="brand"
+        >
+
+            <div class="brand-mark">
+                ≋
+            </div>
+
+            <div>
+                <div class="brand-name">
+                    AquaPulse
+                </div>
+
+                <div class="brand-subtitle">
+                    River Intelligence
+                </div>
+            </div>
+
+        </a>
+
+
+        <nav class="nav-links">
+
+            <a
+                href="{{ url_for('home') }}"
+                class="{% if active_page == 'home' %}active{% endif %}"
+            >
+                Home
+            </a>
+
+            <a
+                href="{{ url_for('insights') }}"
+                class="{% if active_page == 'insights' %}active{% endif %}"
+            >
+                Insights
+            </a>
+
+            <a
+                href="{{ url_for('data_records') }}"
+                class="{% if active_page == 'data_records' %}active{% endif %}"
+            >
+                Data Records
+            </a>
+
+            <a
+                href="{{ url_for('about') }}"
+                class="{% if active_page == 'about' %}active{% endif %}"
+            >
+                About
+            </a>
+
+        </nav>
+
+    </div>
+
+</header>
+
+
+<main class="page-container">
+
+
+<section class="home-hero">
+
+    <div class="hero-soft-shape shape-one"></div>
+    <div class="hero-soft-shape shape-two"></div>
+    <div class="hero-soft-shape shape-three"></div>
+
+
+    <div class="home-hero-content">
+
+        <div class="hero-eyebrow">
+            LIVE RIVER INTELLIGENCE
+        </div>
+
+        <h1>
+            River monitoring,
+            <span>made clearer.</span>
+        </h1>
+
+        <p>
+            AquaPulse brings live River Derwent measurements
+            and machine-learning forecasts together in one
+            simple monitoring experience.
+        </p>
+
+
+        <div class="hero-tags">
+
+            <span class="tag tag-lilac">
+                Dissolved Oxygen
+            </span>
+
+            <span class="tag tag-peach">
+                Dissolved Oxygen Percentage
+            </span>
+
+            <span class="tag tag-mint">
+                Water Temperature
+            </span>
+
+            <span class="tag tag-sky">
+                15–120 min Forecast
+            </span>
+
+        </div>
+
+    </div>
+
+
+    <div class="hero-side-panel">
+
+        <div class="mini-panel mini-lilac">
+
+            <span class="mini-icon">
+                O₂
+            </span>
+
+            <div>
+                <strong>Live DO</strong>
+                <small>River condition</small>
+            </div>
+
+        </div>
+
+
+        <div class="mini-panel mini-peach">
+
+            <span class="mini-icon">
+                %
+            </span>
+
+            <div>
+                <strong>
+                    Dissolved Oxygen Percentage
+                </strong>
+
+                <small>
+                    DO percentage
+                </small>
+            </div>
+
+        </div>
+
+
+        <div class="mini-panel mini-mint">
+
+            <span class="mini-icon">
+                °C
+            </span>
+
+            <div>
+                <strong>
+                    Temperature
+                </strong>
+
+                <small>
+                    Water condition
+                </small>
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+{% if error %}
+
+<div class="message-box error-box">
+
+    <strong>
+        AquaPulse could not load river data.
+    </strong>
+
+    <p>
+        {{ error }}
+    </p>
+
+</div>
+
+{% else %}
+
+
+{% if data_source != "live_api" %}
+
+<div class="message-box warning-box">
+
+    <strong>
+        Latest saved AquaSensor reading
+    </strong>
+
+    <p>
+        Live AquaSensor data is temporarily unavailable.
+        The latest successfully saved reading is being shown.
+    </p>
+
+</div>
+
+{% endif %}
+
+
+<section class="section">
+
+    <div class="section-top">
+
+        <div>
+
+            <div class="section-label">
+                MONITORING STATIONS
+            </div>
+
+            <h2>
+                Choose a station
+            </h2>
+
+            <p>
+                View the latest conditions for one of the
+                three River Derwent AquaSensor locations.
+            </p>
+
+        </div>
+
+        <div class="source-pill">
+
+            {% if data_source == "live_api" %}
+
+                <span class="source-dot"></span>
+                Live AquaSensor
+
+            {% else %}
+
+                <span class="source-dot saved"></span>
+                Latest saved
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+
+    <div class="station-grid">
+
+        {% for station in stations %}
+
+        <a
+            href="{{ url_for(
+                'home',
+                station=station.sensor_name
+            ) }}"
+            class="
+                station-card
+                station-colour-{{ loop.index }}
+                {% if station.sensor_name == selected_station %}
+                    selected-station
+                {% endif %}
+            "
+        >
+
+            <div class="station-card-top">
+
+                <div class="station-index">
+                    0{{ loop.index }}
+                </div>
+
+                {% if station.sensor_name == selected_station %}
+
+                <div class="station-check">
+                    ✓
+                </div>
+
+                {% else %}
+
+                <div class="station-arrow">
+                    →
+                </div>
+
+                {% endif %}
+
+            </div>
+
+
+            <h3>
+                {{ station.sensor_name }}
+            </h3>
+
+            <span class="station-location">
+                {{ station.location }}
+            </span>
+
+
+            <div class="station-preview">
+
+                <span>
+                    {{ "%.2f"|format(station.do_mgl) }}
+                    mg/L
+                </span>
+
+                <span>
+                    {{ "%.1f"|format(station.temperature) }}
+                    °C
+                </span>
+
+            </div>
+
+        </a>
+
+        {% endfor %}
+
+    </div>
+
+</section>
+
+
+<section class="section">
+
+    <div class="section-top">
+
+        <div>
+
+            <div class="section-label">
+                CURRENT CONDITIONS
+            </div>
+
+            <h2>
+                {{ selected_station }}
+            </h2>
+
+            <p>
+                Latest dissolved oxygen and water
+                temperature measurements.
+            </p>
+
+        </div>
+
+
+        <div class="reading-time">
+
+            <span>
+                Latest reading
+            </span>
+
+            <strong>
+                {{ timestamp_text }}
+            </strong>
+
+        </div>
+
+    </div>
+
+
+    <div class="conditions-grid">
+
+
+        <article class="condition-card do-card">
+
+            <div class="condition-icon do-icon">
+                O₂
+            </div>
+
+            <div class="condition-label">
+                DISSOLVED OXYGEN
+            </div>
+
+            <div class="condition-value">
+
+                {{
+                    "%.2f"|format(
+                        sensor["dissolved_oxygen_mgl"]
+                    )
+                }}
+
+                <small>
+                    mg/L
+                </small>
+
+            </div>
+
+            <p>
+                Current dissolved oxygen concentration
+                in the river water.
+            </p>
+
+        </article>
+
+
+        <article class="condition-card percent-card">
+
+            <div class="condition-icon percent-icon">
+                %
+            </div>
+
+            <div class="condition-label">
+                DISSOLVED OXYGEN PERCENTAGE
+            </div>
+
+            <div class="condition-value">
+
+                {{
+                    "%.2f"|format(
+                        sensor["dissolved_oxygen_pct"]
+                    )
+                }}
+
+                <small>
+                    %
+                </small>
+
+            </div>
+
+            <p>
+                Current dissolved oxygen percentage
+                measured by the AquaSensor.
+            </p>
+
+        </article>
+
+
+        <article class="condition-card temp-card">
+
+            <div class="condition-icon temp-icon">
+                °C
+            </div>
+
+            <div class="condition-label">
+                WATER TEMPERATURE
+            </div>
+
+            <div class="condition-value">
+
+                {{
+                    "%.2f"|format(
+                        sensor["temperature"]
+                    )
+                }}
+
+                <small>
+                    °C
+                </small>
+
+            </div>
+
+            <p>
+                Current river water temperature at
+                the selected monitoring station.
+            </p>
+
+        </article>
+
+    </div>
+
+</section>
+
+
+<section class="section forecast-area">
+
+    <div class="section-top">
+
+        <div>
+
+            <div class="section-label">
+                MACHINE-LEARNING FORECAST
+            </div>
+
+            <h2>
+                Dissolved oxygen forecast
+            </h2>
+
+            <p>
+                Forecast dissolved oxygen from 15 minutes
+                through to 2 hours ahead.
+            </p>
+
+        </div>
+
+        <div class="forecast-badge">
+            8 horizons
+        </div>
+
+    </div>
+
+
+    <div class="forecast-grid">
+
+        {% for item in forecast_rows %}
+
+        <article
+            class="
+                forecast-card
+                forecast-colour-{{ loop.index }}
+            "
+        >
+
+            <div class="forecast-top">
+
+                <span>
+                    Forecast
+                </span>
+
+                <span>
+                    0{{ loop.index }}
+                </span>
+
+            </div>
+
+
+            <div class="forecast-time">
+                {{ item.label }}
+            </div>
+
+
+            <div class="forecast-value">
+
+                {{ "%.2f"|format(item.value) }}
+
+                <small>
+                    mg/L
+                </small>
+
+            </div>
+
+        </article>
+
+        {% endfor %}
+
+    </div>
+
+
+    <div class="home-actions">
+
+        <a
+            href="{{ url_for(
+                'insights',
+                station=selected_station
+            ) }}"
+            class="button button-primary"
+        >
+            View Insights →
+        </a>
+
+        <a
+            href="{{ url_for(
+                'refresh',
+                station=selected_station
+            ) }}"
+            class="button button-secondary"
+        >
+            Refresh Live Data
+        </a>
+
+    </div>
+
+</section>
+
+
+{% endif %}
+
+</main>
+
+
+<footer class="footer">
+
+    <div class="footer-content">
+
+        <div>
+
+            <strong>
+                ≋ AquaPulse
+            </strong>
+
+            <p>
+                River Derwent water-quality intelligence.
+            </p>
+
+        </div>
+
+    </div>
+
+</footer>
+
+
+</body>
+</html>

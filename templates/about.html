@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        AquaPulse | About
+    </title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='style.css') }}"
+    >
+
+</head>
+
+
+<body>
+
+
+<!-- =========================================================
+     NAVIGATION
+========================================================= -->
+
+<header class="site-header">
+
+    <div class="navbar">
+
+        <a
+            href="{{ url_for('home') }}"
+            class="brand"
+        >
+
+            <div class="brand-mark">
+                ≋
+            </div>
+
+            <div>
+
+                <div class="brand-name">
+                    AquaPulse
+                </div>
+
+                <div class="brand-subtitle">
+                    River Intelligence
+                </div>
+
+            </div>
+
+        </a>
+
+
+        <nav class="nav-links">
+
+            <a href="{{ url_for('home') }}">
+                Home
+            </a>
+
+            <a href="{{ url_for('insights') }}">
+                Insights
+            </a>
+
+            <a
+                href="{{ url_for('about') }}"
+                class="active"
+            >
+                About
+            </a>
+
+        </nav>
+
+    </div>
+
+</header>
+
+
+<main class="page-container">
+
+
+<!-- =========================================================
+     ABOUT HERO
+========================================================= -->
+
+<section class="about-hero">
+
+    <div class="section-label">
+        ABOUT AQUAPULSE
+    </div>
+
+    <h1>
+        River Water Quality Monitoring and
+        Dissolved Oxygen Forecasting
+    </h1>
+
+    <p>
+        AquaPulse is a machine-learning-based river water-quality
+        monitoring and forecasting system developed to analyse
+        dissolved oxygen conditions in the River Derwent.
+    </p>
+
+    <p>
+        The system brings together live river sensor measurements,
+        live weather information, machine-learning predictions,
+        anomaly detection and explainable AI in a single web
+        application.
+    </p>
+
+    <p>
+        The main purpose of AquaPulse is to monitor current river
+        conditions while also providing an indication of how
+        dissolved oxygen levels may change over the next two hours.
+    </p>
+
+</section>
+
+
+<!-- =========================================================
+     LIVE MONITORING
+========================================================= -->
+
+<section class="section">
+
+    <div class="section-label">
+        LIVE RIVER MONITORING
+    </div>
+
+    <h2>
+        Three River Derwent monitoring stations
+    </h2>
+
+    <p class="about-section-text">
+        AquaPulse monitors live AquaSensor measurements from
+        three monitoring stations located along the River Derwent.
+    </p>
+
+
+    <div class="about-grid">
+
+
+        <article class="about-card">
+
+            <div class="condition-icon do-icon">
+                01
+            </div>
+
+            <h3>
+                Derwent 13
+            </h3>
+
+            <p>
+                Downstream monitoring station used to observe
+                current River Derwent conditions.
+            </p>
+
+        </article>
+
+
+        <article class="about-card">
+
+            <div class="condition-icon percent-icon">
+                02
+            </div>
+
+            <h3>
+                Derwent 13-50
+            </h3>
+
+            <p>
+                Midstream monitoring station providing live
+                AquaSensor river measurements.
+            </p>
+
+        </article>
+
+
+        <article class="about-card">
+
+            <div class="condition-icon temp-icon">
+                03
+            </div>
+
+            <h3>
+                Derwent 21
+            </h3>
+
+            <p>
+                Upstream monitoring station used for comparison
+                with the other River Derwent locations.
+            </p>
+
+        </article>
+
+
+    </div>
+
+
+    <div class="about-info-box">
+
+        <h3>
+            Live measurements
+        </h3>
+
+        <p>
+            The application retrieves the latest available
+            AquaSensor measurements and presents:
+        </p>
+
+        <ul>
+
+            <li>
+                <strong>Dissolved Oxygen (mg/L)</strong> –
+                the concentration of dissolved oxygen present
+                in the river water.
+            </li>
+
+            <li>
+                <strong>Dissolved Oxygen (%)</strong> –
+                dissolved oxygen expressed as a percentage.
+            </li>
+
+            <li>
+                <strong>Water Temperature (°C)</strong> –
+                the current temperature of the river water.
+            </li>
+
+        </ul>
+
+    </div>
+
+</section>
+
+
+<!-- =========================================================
+     WEATHER DATA
+========================================================= -->
+
+<section class="section">
+
+    <div class="section-label">
+        WEATHER DATA
+    </div>
+
+    <h2>
+        Open-Meteo live weather information
+    </h2>
+
+    <p class="about-section-text">
+        Alongside AquaSensor measurements, AquaPulse uses
+        Open-Meteo weather data to provide additional
+        environmental information for dissolved oxygen prediction.
+    </p>
+
+
+    <div class="feature-chip-grid">
+
+        <div class="feature-chip chip-sky">
+            Air Temperature
+        </div>
+
+        <div class="feature-chip chip-peach">
+            Sunshine / Solar Radiation
+        </div>
+
+        <div class="feature-chip chip-lilac">
+            Cloud Cover
+        </div>
+
+    </div>
+
+
+    <p class="about-section-text">
+        Combining river sensor measurements with weather information
+        allows the prediction models to consider both current water
+        conditions and surrounding environmental conditions when
+        forecasting dissolved oxygen.
+    </p>
+
+</section>
+
+
+<!-- =========================================================
+     MACHINE LEARNING
+========================================================= -->
+
+<section class="section">
+
+    <div class="section-label">
+        MACHINE-LEARNING FORECASTING
+    </div>
+
+    <h2>
+        Predicting dissolved oxygen up to two hours ahead
+    </h2>
+
+    <p class="about-section-text">
+        One of the main features of AquaPulse is its ability to
+        forecast future dissolved oxygen concentration in mg/L.
+    </p>
+
+    <p class="about-section-text">
+        Three machine-learning approaches were evaluated as
+        part of the project:
+    </p>
+
+
+    <div class="feature-chip-grid">
+
+        <div class="feature-chip chip-lilac">
+            Linear Regression
+        </div>
+
+        <div class="feature-chip chip-mint">
+            Random Forest
+        </div>
+
+        <div class="feature-chip chip-peach">
+            XGBoost
+        </div>
+
+    </div>
+
+
+    <p class="about-section-text">
+        The models were trained using historical river and
+        environmental data, and their prediction performance
+        was evaluated to determine the most suitable model for
+        each forecasting task.
+    </p>
+
+
+    <div class="forecast-horizon-box">
+
+        <h3>
+            Forecast horizons
+        </h3>
+
+        <div class="horizon-list">
+
+            <span>15 min</span>
+            <span>30 min</span>
+            <span>45 min</span>
+            <span>60 min</span>
+            <span>75 min</span>
+            <span>90 min</span>
+            <span>105 min</span>
+            <span>120 min</span>
+
+        </div>
+
+    </div>
+
+
+    <p class="about-section-text">
+        This allows AquaPulse to display the current measured
+        dissolved oxygen value and provide short-term predictions
+        extending up to two hours into the future.
+    </p>
+
+</section>
+
+
+<!-- =========================================================
+     MODEL FEATURES
+========================================================= -->
+
+<section class="section">
+
+    <div class="section-label">
+        PREDICTION FEATURES
+    </div>
+
+    <h2>
+        Information used by the prediction system
+    </h2>
+
+    <p class="about-section-text">
+        The machine-learning system uses a combination of river
+        measurements, weather information, time information and
+        engineered features.
+    </p>
+
+
+    <div class="feature-chip-grid">
+
+        <div class="feature-chip chip-sky">
+            Water Temperature
+        </div>
+
+        <div class="feature-chip chip-peach">
+            Air Temperature
+        </div>
+
+        <div class="feature-chip chip-lilac">
+            Sunshine
+        </div>
+
+        <div class="feature-chip chip-mint">
+            Time of Day
+        </div>
+
+        <div class="feature-chip chip-sky">
+            Current DO
+        </div>
+
+        <div class="feature-chip chip-lilac">
+            DO Percentage
+        </div>
+
+        <div class="feature-chip chip-peach">
+            Sensor Information
+        </div>
+
+        <div class="feature-chip chip-mint">
+            Pollution Alert
+        </div>
+
+        <div class="feature-chip chip-sky">
+            Anomaly Information
+        </div>
+
+        <div class="feature-chip chip-lilac">
+            Seasonal Proxy
+        </div>
+
+    </div>
+
+
+    <p class="about-section-text">
+        The seasonal proxy represents seasonal and weather-related
+        information so that changes associated with different
+        times of the year and environmental conditions can be
+        considered by the prediction system.
+    </p>
+
+</section>
+
+
+<!-- =========================================================
+     ANOMALY DETECTION
+========================================================= -->
+
+<section class="section">
+
+    <div class="section-label">
+        ANOMALY DETECTION
+    </div>
+
+    <h2>
+        Green, Orange and Red river alerts
+    </h2>
+
+    <p class="about-section-text">
+        AquaPulse includes an anomaly-detection and alert system
+        designed to make unusual or potentially concerning river
+        conditions easier to identify.
+    </p>
+
+
+    <div class="traffic-guide-grid">
+
+
+        <article class="traffic-guide green-guide">
+
+            <span class="guide-circle guide-green"></span>
+
+            <h3>
+                Green – Normal
+            </h3>
+
+            <p>
+                Current and predicted river conditions are within
+                the configured acceptable range and no significant
+                anomaly has been detected.
+            </p>
+
+        </article>
+
+
+        <article class="traffic-guide orange-guide">
+
+            <span class="guide-circle guide-orange"></span>
+
+            <h3>
+                Orange – Warning
+            </h3>
+
+            <p>
+                A potentially concerning change or unusual trend
+                has been identified and the station may require
+                closer monitoring.
+            </p>
+
+        </article>
+
+
+        <article class="traffic-guide red-guide">
+
+            <span class="guide-circle guide-red"></span>
+
+            <h3>
+                Red – Alert
+            </h3>
+
+            <p>
+                A significant low dissolved oxygen or abnormal
+                condition has been detected and requires attention.
+            </p>
+
+        </article>
+
+
+    </div>
+
+</section>
+
+
+<!-- =========================================================
+     INTERACTIVE INSIGHTS
+========================================================= -->
+
+<section class="section">
+
+    <div class="section-label">
+        INTERACTIVE RIVER INSIGHTS
+    </div>
+
+    <h2>
+        Exploring changes over time
+    </h2>
+
+    <p class="about-section-text">
+        The Insights section provides an interactive view of
+        how River Derwent conditions change over time.
+    </p>
+
+
+    <div class="about-grid">
+
+
+        <article class="about-card">
+
+            <div class="condition-icon do-icon">
+                O₂
+            </div>
+
+            <h3>
+                Actual DO
+            </h3>
+
+            <p>
+                Measured dissolved oxygen values obtained
+                from AquaSensor.
+            </p>
+
+        </article>
+
+
+        <article class="about-card">
+
+            <div class="condition-icon percent-icon">
+                ↗
+            </div>
+
+            <h3>
+                Predicted DO
+            </h3>
+
+            <p>
+                Machine-learning forecasts extending from
+                the latest measurement into the next two hours.
+            </p>
+
+        </article>
+
+
+        <article class="about-card">
+
+            <div class="condition-icon temp-icon">
+                °C
+            </div>
+
+            <h3>
+                Water Temperature
+            </h3>
+
+            <p>
+                Measured river temperature displayed alongside
+                dissolved oxygen over time.
+            </p>
+
+        </article>
+
+
+    </div>
+
+
+    <p class="about-section-text">
+        The interactive graphs allow users to zoom in and out,
+        move backwards through older readings, inspect individual
+        values and timestamps, and compare historical measurements
+        with future predictions.
+    </p>
+
+</section>
+
+
+<!-- =========================================================
+     EXPLAINABLE AI
+========================================================= -->
+
+<section class="section">
+
+    <div class="section-label">
+        EXPLAINABLE AI
+    </div>
+
+    <h2>
+        Understanding model predictions with SHAP
+    </h2>
+
+    <p class="about-section-text">
+        AquaPulse incorporates SHAP
+        (SHapley Additive exPlanations) to support
+        explainable machine learning.
+    </p>
+
+    <p class="about-section-text">
+        Rather than presenting a prediction without explanation,
+        SHAP can be used to examine how different input features
+        contributed to a model prediction.
+    </p>
+
+    <p class="about-section-text">
+        This provides greater transparency around model behaviour
+        and helps explain the factors influencing dissolved oxygen
+        forecasts.
+    </p>
+
+</section>
+
+
+<!-- =========================================================
+     SYSTEM WORKFLOW
+========================================================= -->
+
+<section class="section">
+
+    <div class="section-label">
+        HOW AQUAPULSE WORKS
+    </div>
+
+    <h2>
+        From live data to river insight
+    </h2>
+
+
+    <div class="workflow">
+
+        <div class="workflow-step">
+            <span>01</span>
+            <strong>AquaSensor live data</strong>
+        </div>
+
+        <div class="workflow-arrow">
+            →
+        </div>
+
+        <div class="workflow-step">
+            <span>02</span>
+            <strong>Open-Meteo weather data</strong>
+        </div>
+
+        <div class="workflow-arrow">
+            →
+        </div>
+
+        <div class="workflow-step">
+            <span>03</span>
+            <strong>Feature preparation</strong>
+        </div>
+
+        <div class="workflow-arrow">
+            →
+        </div>
+
+        <div class="workflow-step">
+            <span>04</span>
+            <strong>ML forecasting</strong>
+        </div>
+
+        <div class="workflow-arrow">
+            →
+        </div>
+
+        <div class="workflow-step">
+            <span>05</span>
+            <strong>Anomaly detection</strong>
+        </div>
+
+        <div class="workflow-arrow">
+            →
+        </div>
+
+        <div class="workflow-step">
+            <span>06</span>
+            <strong>AquaPulse web app</strong>
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- =========================================================
+     PROJECT PURPOSE
+========================================================= -->
+
+<section class="section">
+
+    <div class="insights-promo">
+
+        <div class="promo-icon">
+            ✦
+        </div>
+
+
+        <div class="promo-copy">
+
+            <div class="section-label soft-label">
+                PROJECT PURPOSE
+            </div>
+
+            <h2>
+                Supporting clearer understanding of river data
+            </h2>
+
+            <p>
+                AquaPulse was developed as an academic research
+                project exploring how machine learning can support
+                river water-quality monitoring.
+            </p>
+
+            <p>
+                The project demonstrates how historical and live
+                environmental data can be transformed into useful
+                predictive information and presented through an
+                accessible web application.
+            </p>
+
+            <p>
+                By combining real-time measurements with short-term
+                forecasting, AquaPulse demonstrates a possible
+                approach for supporting earlier awareness of changes
+                in dissolved oxygen conditions rather than relying
+                only on observations of the current state.
+            </p>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- =========================================================
+     DISCLAIMER
+========================================================= -->
+
+<section class="section">
+
+    <div class="about-disclaimer">
+
+        <div class="disclaimer-icon">
+            i
+        </div>
+
+        <div>
+
+            <h3>
+                Important research note
+            </h3>
+
+            <p>
+                AquaPulse is an academic research prototype and is
+                intended for research, analysis and demonstration
+                purposes.
+            </p>
+
+            <p>
+                Machine-learning predictions and anomaly alerts
+                should not be treated as official environmental
+                warnings or used as a replacement for professional
+                environmental monitoring and decision-making.
+            </p>
+
+            <p>
+                Data availability and forecasts also depend on the
+                availability and quality of the underlying
+                AquaSensor and Open-Meteo data.
+            </p>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+</main>
+
+
+<!-- =========================================================
+     FOOTER
+========================================================= -->
+
+<footer class="footer">
+
+    <div class="footer-content">
+
+        <div>
+
+            <strong>
+                ≋ AquaPulse
+            </strong>
+
+            <p>
+                River Derwent water-quality intelligence.
+            </p>
+
+        </div>
+
+
+        <div class="footer-tags">
+
+            <span>
+                AquaSensor
+            </span>
+
+            <span>
+                Open-Meteo
+            </span>
+
+            <span>
+                Machine Learning
+            </span>
+
+            <span>
+                River Derwent
+            </span>
+
+        </div>
+
+    </div>
+
+</footer>
+
+
+</body>
+
+</html>
