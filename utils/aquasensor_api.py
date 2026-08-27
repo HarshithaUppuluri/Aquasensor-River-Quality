@@ -10,25 +10,18 @@ from utils.config import (
     LIVE_API_HISTORY_FILE,
     SENSOR_NAME_MAP,
 )
+from utils.database import save_sensor_readings
 
-
-# ============================================================
-# CUSTOM ERROR
-# ============================================================
 
 class AquaSensorAPIError(RuntimeError):
     pass
 
 
-# ============================================================
-# PROJECT ROOT
-# ============================================================
-
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 
 # ============================================================
-# AQUASENSOR CREDENTIALS
+# CREDENTIALS
 # ============================================================
 
 def _credentials():
@@ -36,17 +29,10 @@ def _credentials():
     Load AquaSensor credentials.
 
     Priority:
-    1. Environment variables - suitable for deployment.
-    2. config/secrets.toml - preferred Flask local setup.
-    3. .streamlit/secrets.toml - temporary legacy fallback.
-
-    This allows AquaPulse to run locally and after deployment
-    without depending on Streamlit.
+    1. Render environment variables.
+    2. config/secrets.toml.
+    3. .streamlit/secrets.toml legacy fallback.
     """
-
-    # --------------------------------------------------------
-    # 1. DEPLOYMENT ENVIRONMENT VARIABLES
-    # --------------------------------------------------------
 
     user = os.getenv(
         "AQUASENSOR_USER",
@@ -65,10 +51,6 @@ def _credentials():
 
     if user and token and catchment:
         return user, token, catchment
-
-    # --------------------------------------------------------
-    # 2. LOCAL SECRETS FILES
-    # --------------------------------------------------------
 
     possible_files = [
         PROJECT_ROOT
@@ -117,11 +99,7 @@ def _credentials():
                 )
             ).strip()
 
-            if (
-                user
-                and token
-                and catchment
-            ):
+            if user and token and catchment:
                 return (
                     user,
                     token,
@@ -131,32 +109,22 @@ def _credentials():
         except Exception as exc:
 
             raise AquaSensorAPIError(
-                f"Could not read AquaSensor "
-                f"credentials from {secrets_file}"
+                f"Could not read AquaSensor credentials "
+                f"from {secrets_file}"
             ) from exc
-
-    # --------------------------------------------------------
-    # NOTHING FOUND
-    # --------------------------------------------------------
 
     raise AquaSensorAPIError(
         "AquaSensor credentials are missing. "
         "Provide AQUASENSOR_USER, AQUASENSOR_TOKEN "
-        "and AQUASENSOR_CATCHMENT as environment "
-        "variables or store them in "
-        "config/secrets.toml."
+        "and AQUASENSOR_CATCHMENT."
     )
 
 
 # ============================================================
-# NORMALISE API RESPONSE
+# NORMALISE PAYLOAD
 # ============================================================
 
 def _normalise_payload(payload):
-    """
-    Extract the list of sensors from the different response
-    structures returned by the AquaSensor API.
-    """
 
     if (
         isinstance(payload, list)
@@ -167,13 +135,17 @@ def _normalise_payload(payload):
         )
         and "sensors" in payload[0]
     ):
-        return payload[0]["sensors"]
+        return payload[0][
+            "sensors"
+        ]
 
     if (
         isinstance(payload, dict)
         and "sensors" in payload
     ):
-        return payload["sensors"]
+        return payload[
+            "sensors"
+        ]
 
     raise AquaSensorAPIError(
         "Unexpected AquaSensor API response structure."
@@ -185,10 +157,6 @@ def _normalise_payload(payload):
 # ============================================================
 
 def _parse_sensor(sensor):
-    """
-    Convert one AquaSensor API sensor response into
-    tabular reading records.
-    """
 
     sensor_id = str(
         sensor.get(
@@ -210,12 +178,16 @@ def _parse_sensor(sensor):
     )
 
     latitude = pd.to_numeric(
-        sensor.get("lat"),
+        sensor.get(
+            "lat"
+        ),
         errors="coerce",
     )
 
     longitude = pd.to_numeric(
-        sensor.get("lon"),
+        sensor.get(
+            "lon"
+        ),
         errors="coerce",
     )
 
@@ -237,13 +209,11 @@ def _parse_sensor(sensor):
     ):
 
         ts = pd.to_numeric(
-            reading.get("ts"),
+            reading.get(
+                "ts"
+            ),
             errors="coerce",
         )
-
-        # ----------------------------------------------------
-        # TIMESTAMP
-        # ----------------------------------------------------
 
         if pd.notna(ts):
 
@@ -269,10 +239,6 @@ def _parse_sensor(sensor):
                 dayfirst=True,
             )
 
-        # ----------------------------------------------------
-        # READING
-        # ----------------------------------------------------
-
         rows.append(
             {
                 "timestamp":
@@ -289,39 +255,55 @@ def _parse_sensor(sensor):
 
                 "lat":
                     (
-                        float(latitude)
-                        if pd.notna(latitude)
+                        float(
+                            latitude
+                        )
+                        if pd.notna(
+                            latitude
+                        )
                         else None
                     ),
 
                 "lon":
                     (
-                        float(longitude)
-                        if pd.notna(longitude)
+                        float(
+                            longitude
+                        )
+                        if pd.notna(
+                            longitude
+                        )
                         else None
                     ),
 
                 "temperature":
                     pd.to_numeric(
-                        reading.get("tmp"),
+                        reading.get(
+                            "tmp"
+                        ),
                         errors="coerce",
                     ),
 
                 "dissolved_oxygen_pct":
                     pd.to_numeric(
-                        reading.get("pcent"),
+                        reading.get(
+                            "pcent"
+                        ),
                         errors="coerce",
                     ),
 
                 "dissolved_oxygen_mgl":
                     pd.to_numeric(
-                        reading.get("mgl"),
+                        reading.get(
+                            "mgl"
+                        ),
                         errors="coerce",
                     ),
 
                 "count":
                     pd.to_numeric(
-                        reading.get("cnt"),
+                        reading.get(
+                            "cnt"
+                        ),
                         errors="coerce",
                     ),
             }
@@ -331,16 +313,21 @@ def _parse_sensor(sensor):
 
 
 # ============================================================
-# SAVE LIVE HISTORY
+# CSV FALLBACK HISTORY
 # ============================================================
 
-def append_live_history(df):
+def append_live_history(
+    df,
+):
     """
-    Append live AquaSensor readings to the historical CSV
-    while preventing duplicate sensor/timestamp records.
+    Keep the existing CSV history as a local/fallback copy.
+    PostgreSQL is the production persistent store.
     """
 
-    if df is None or df.empty:
+    if (
+        df is None
+        or df.empty
+    ):
         return
 
     LIVE_API_HISTORY_FILE.parent.mkdir(
@@ -350,14 +337,16 @@ def append_live_history(df):
 
     incoming = df.copy()
 
-    incoming["timestamp"] = (
-        incoming["timestamp"]
-        .astype(str)
+    incoming[
+        "timestamp"
+    ] = (
+        incoming[
+            "timestamp"
+        ]
+        .astype(
+            str
+        )
     )
-
-    # --------------------------------------------------------
-    # ADD EXISTING HISTORY
-    # --------------------------------------------------------
 
     if LIVE_API_HISTORY_FILE.exists():
 
@@ -379,10 +368,6 @@ def append_live_history(df):
         except Exception:
             pass
 
-    # --------------------------------------------------------
-    # REMOVE DUPLICATES
-    # --------------------------------------------------------
-
     incoming = (
         incoming
         .drop_duplicates(
@@ -394,10 +379,6 @@ def append_live_history(df):
         )
     )
 
-    # --------------------------------------------------------
-    # SAVE
-    # --------------------------------------------------------
-
     incoming.to_csv(
         LIVE_API_HISTORY_FILE,
         index=False,
@@ -405,18 +386,12 @@ def append_live_history(df):
 
 
 # ============================================================
-# LOAD LIVE HISTORY
+# LOAD CSV FALLBACK
 # ============================================================
 
 def load_live_history(
     sensor_name=None,
 ):
-    """
-    Load stored AquaSensor live readings.
-
-    A station name can optionally be supplied to return
-    readings for only one monitoring station.
-    """
 
     if not LIVE_API_HISTORY_FILE.exists():
         return pd.DataFrame()
@@ -429,29 +404,44 @@ def load_live_history(
     if df.empty:
         return df
 
-    if "timestamp" not in df.columns:
+    if (
+        "timestamp"
+        not in df.columns
+    ):
         return pd.DataFrame()
 
-    df["timestamp"] = pd.to_datetime(
-        df["timestamp"],
+    df[
+        "timestamp"
+    ] = pd.to_datetime(
+        df[
+            "timestamp"
+        ],
         errors="coerce",
     )
 
     df = df.dropna(
         subset=[
-            "timestamp",
+            "timestamp"
         ]
     )
 
     if (
-        sensor_name is not None
-        and "sensor_name" in df.columns
+        sensor_name
+        is not None
+        and "sensor_name"
+        in df.columns
     ):
 
         df = df[
-            df["sensor_name"]
-            .astype(str)
-            == str(sensor_name)
+            df[
+                "sensor_name"
+            ]
+            .astype(
+                str
+            )
+            == str(
+                sensor_name
+            )
         ]
 
     return (
@@ -466,17 +456,10 @@ def load_live_history(
 
 
 # ============================================================
-# LOAD FALLBACK READINGS
+# FALLBACK LATEST
 # ============================================================
 
 def load_latest_saved_readings():
-    """
-    Return the newest successfully stored reading for each
-    AquaSensor monitoring station.
-
-    This is used if the live AquaSensor API is temporarily
-    unavailable.
-    """
 
     history = load_live_history()
 
@@ -496,7 +479,9 @@ def load_latest_saved_readings():
             as_index=False,
             dropna=False,
         )
-        .tail(1)
+        .tail(
+            1
+        )
         .reset_index(
             drop=True
         )
@@ -506,16 +491,19 @@ def load_latest_saved_readings():
 
 
 # ============================================================
-# FETCH LIVE AQUASENSOR DATA
+# FETCH LIVE DATA
 # ============================================================
 
 def fetch_aquasensor_live():
     """
-    Fetch the newest readings from the official AquaSensor
-    API.
+    Fetch AquaSensor readings.
 
-    If the API is unavailable, AquaPulse automatically uses
-    the latest successfully stored readings instead.
+    Every valid reading returned by the API is persisted to:
+    1. PostgreSQL production history.
+    2. CSV fallback history.
+
+    Only the newest reading per station is returned for
+    current cards and ML forecasting.
     """
 
     user, token, catchment = (
@@ -523,10 +511,6 @@ def fetch_aquasensor_live():
     )
 
     try:
-
-        # ----------------------------------------------------
-        # API REQUEST
-        # ----------------------------------------------------
 
         response = requests.get(
             AQUASENSOR_BASE_URL,
@@ -549,19 +533,11 @@ def fetch_aquasensor_live():
 
         response.raise_for_status()
 
-        # ----------------------------------------------------
-        # API JSON
-        # ----------------------------------------------------
-
         payload = response.json()
 
         sensors = _normalise_payload(
             payload
         )
-
-        # ----------------------------------------------------
-        # PARSE READINGS
-        # ----------------------------------------------------
 
         rows = []
 
@@ -573,39 +549,116 @@ def fetch_aquasensor_live():
                 )
             )
 
-        df = pd.DataFrame(
+        all_readings = pd.DataFrame(
             rows
         )
 
-        if df.empty:
+        if all_readings.empty:
 
             raise AquaSensorAPIError(
                 "AquaSensor returned no readings."
             )
 
-        # ----------------------------------------------------
+        # ====================================================
         # CLEAN
-        # ----------------------------------------------------
+        # ====================================================
 
-        df["timestamp"] = pd.to_datetime(
-            df["timestamp"],
+        all_readings[
+            "timestamp"
+        ] = pd.to_datetime(
+            all_readings[
+                "timestamp"
+            ],
             errors="coerce",
         )
 
-        df = df.dropna(
-            subset=[
-                "timestamp",
-                "dissolved_oxygen_mgl",
-                "temperature",
-            ]
+        for column in (
+            "temperature",
+            "dissolved_oxygen_mgl",
+            "dissolved_oxygen_pct",
+            "count",
+        ):
+
+            if (
+                column
+                in all_readings.columns
+            ):
+
+                all_readings[
+                    column
+                ] = pd.to_numeric(
+                    all_readings[
+                        column
+                    ],
+                    errors="coerce",
+                )
+
+        all_readings = (
+            all_readings
+            .dropna(
+                subset=[
+                    "timestamp",
+                    "sensor_id",
+                    "sensor_name",
+                    "temperature",
+                    "dissolved_oxygen_mgl",
+                ]
+            )
+            .sort_values(
+                [
+                    "sensor_name",
+                    "timestamp",
+                ]
+            )
+            .drop_duplicates(
+                subset=[
+                    "sensor_id",
+                    "timestamp",
+                ],
+                keep="last",
+            )
+            .reset_index(
+                drop=True
+            )
         )
 
-        # ----------------------------------------------------
-        # LATEST READING PER STATION
-        # ----------------------------------------------------
+        if all_readings.empty:
 
-        df = (
-            df
+            raise AquaSensorAPIError(
+                "No valid AquaSensor readings were returned."
+            )
+
+        # ====================================================
+        # POSTGRESQL PERSISTENT HISTORY
+        # ====================================================
+
+        try:
+
+            save_sensor_readings(
+                all_readings
+            )
+
+        except Exception as database_error:
+
+            print(
+                "Warning: Could not save AquaSensor "
+                f"readings to PostgreSQL: {database_error}"
+            )
+
+        # ====================================================
+        # CSV FALLBACK HISTORY
+        # ====================================================
+
+        append_live_history(
+            all_readings
+        )
+
+        # ====================================================
+        # LATEST READING PER STATION
+        # ====================================================
+
+        latest = (
+            all_readings
             .sort_values(
                 [
                     "sensor_name",
@@ -617,43 +670,26 @@ def fetch_aquasensor_live():
                 as_index=False,
                 dropna=False,
             )
-            .tail(1)
+            .tail(
+                1
+            )
             .reset_index(
                 drop=True
             )
         )
 
-        if df.empty:
-
-            raise AquaSensorAPIError(
-                "No valid AquaSensor readings "
-                "were returned."
-            )
-
-        # ----------------------------------------------------
-        # SAVE SUCCESSFUL LIVE RESULT
-        # ----------------------------------------------------
-
-        append_live_history(
-            df
-        )
-
-        # ----------------------------------------------------
-        # DATA SOURCE INFORMATION
-        # ----------------------------------------------------
-
-        df.attrs[
+        latest.attrs[
             "data_source"
         ] = "live_api"
 
-        df.attrs[
+        latest.attrs[
             "api_error"
         ] = None
 
-        return df
+        return latest
 
     # ========================================================
-    # FALLBACK
+    # API FALLBACK
     # ========================================================
 
     except Exception as api_error:
